@@ -1,0 +1,4 @@
+# Sniffer interface
+config socat 'sniffler'
+	option enable '1'
+	option SocatOptions ' -d -d tcp-l:7777,reuseaddr,fork system:/bin/scanner.sh'
