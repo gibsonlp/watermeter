@@ -6,7 +6,6 @@ config interface 'loopback'
 
 config interface 'wan'
 	option ifname 'eth0'
-	option force_link '1'
 	option proto 'static'
 	option ipaddr '192.168.1.19'
 	option netmask '255.255.255.0'

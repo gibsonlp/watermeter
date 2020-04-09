@@ -1,16 +1,12 @@
-config wifi-device  radio0
-	option type     mac80211
-	option channel  6
-	option hwmode	11g
-	option path	'pci0000:00/0000:00:00.0'
-	option htmode	HT20
-	# REMOVE THIS LINE TO ENABLE WIFI:
-	#option disabled 1
+config wifi-device 'radio0'
+	option type 'mac80211'
+	option channel '6'
+	option hwmode '11ng'
+	option htmode 'HT20'
+	option path 'pci0000:00/0000:00:00.0'
+	option disabled '0'
 
-config wifi-iface
-	option device   radio0
-	option network  lan
-	option mode     monitor
-	option ssid     NONE
-	option encryption none
-
+config wifi-iface 'mon0'
+	option device 'radio0'
+	option mode 'monitor'
+	option encryption 'none'
