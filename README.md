@@ -11,12 +11,12 @@ Centilitre / min to report flow (101.11 l/min = 10111 cl/min)
 All info would be in the header
 
 ### Mandatory:
-| File | 
-| ------ |
-| server_side/water_analyzer.py | 
-| OpenWRT/files/bin/scanner.sh |
-| http/get.php |
-| http/db.php | 
+| File |  Comments |
+| ------ | ------ |
+| server_side/water_analyzer.conf | move to /etc/water_analyzer/water_analyzer.conf |
+| server_side/runwater.sh | put your meter's serial number |
+| http/get.php | |
+| http/db.php | |
 
 ### Optional:
 | File |  Comments |
@@ -29,7 +29,7 @@ All info would be in the header
 
 ## Installation
 
-I do not provide step by step instructions, most of the information / steps will be described in the blog, feel free to add any useful instructions if you wish
+I do not provide step by step instructions, most of the information / steps will be described in the blog, feel free to add any useful instructions if you wish.
 As a minimum, after configuration you should be able to run the analyzer tool with
 
 ```sh
