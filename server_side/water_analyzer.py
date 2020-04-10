@@ -191,7 +191,7 @@ def get_config():
     if ARGS.config:
         config_file = ARGS.config
     else:
-        config_file = "/etc/water_analyzer"
+        config_file = "/etc/water_analyzer/water_analyzer.conf"
 
     if not os.path.isfile(config_file):
         LOGGER.critical("Cannot find configuration file at %s", config_file)
