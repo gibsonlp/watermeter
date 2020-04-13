@@ -15,8 +15,8 @@ All info would be in the header
 | ------ | ------ |
 | server_side/water_analyzer.conf | move to /etc/water_analyzer/water_analyzer.conf |
 | server_side/runwater.sh | put your meter's serial number |
-| http/get.php | |
-| http/db.php | |
+| http/get.php | set db.php path|
+| http/db.php | set mariadb/mysql parameters|
 
 ### Optional:
 | File |  Comments |
@@ -29,13 +29,9 @@ All info would be in the header
 
 ## Installation
 
-I do not provide step by step instructions, most of the information / steps will be described in the blog, feel free to add any useful instructions if you wish.
-As a minimum, after configuration you should be able to run the analyzer tool with
+I will add installation instructions as time permits, feel free to reach out if you need assistance setting this up.
+As a minimum, after configuration you should be able to run the analyzer tool with:
 
 ```sh
 $ stdbuf -i0 -e0 -o0 nc [IP ADDRESS OF LISTENING DEVICE RUNNING SOCAT] | wateranalyzer.py
 ```
-License
-----
-
-MIT
