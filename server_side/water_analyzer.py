@@ -6,6 +6,21 @@ Can run on stdin, pcap file and with a small modification - directly on an inter
 
 This model uses dekaliters (DAL) to report volume (101.11 CBM = 10111 DAL) and -
 Centilitre / min to report flow (101.11 l/min = 10111 cl/min)
+
+Copyright © 2020 Gil Disatnik <gil@disatnik.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import sys
