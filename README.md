@@ -1,14 +1,14 @@
 # Water meter project
 
 This repository contains MV-MA (NT) wireless water meter analyzer tool as well as:
-- html graph tool (under http dir)
-- Simple python script that I used to reverse-engineer the protocol (under reverse-tool dir)
+- A simple graph tool (under http dir) to visualize the data.
+- The python script I wrote and used to reverse-engineer the protocol (under reverse-tool dir).
+- OpenWRT configuration (not needed if you can run the analyzer tool directly on a RPi or any other capable hardware.)
 
 This meter uses dekaliters (DAL) to report volume (101.11 CBM = 10111 DAL) and -
-Centilitre / min to report flow (101.11 l/min = 10111 cl/min)
+Centilitre / min to report flow (101.11 L/min = 10111 cL/min)
   
 ## The following files need configuration
-All info would be in the header
 
 ### Mandatory:
 | File |  Comments |
@@ -30,8 +30,4 @@ All info would be in the header
 ## Installation
 
 I will add installation instructions as time permits, feel free to reach out if you need assistance setting this up.
-As a minimum, after configuration you should be able to run the analyzer tool with:
-
-```sh
-$ stdbuf -i0 -e0 -o0 nc [IP ADDRESS OF LISTENING DEVICE RUNNING SOCAT] | wateranalyzer.py
-```
+If you can run the analyzer on a unit capable of sniffing wifi you can simply run it directly on the wifi interface.
