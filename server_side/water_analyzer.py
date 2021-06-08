@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 MV-MA (NT) wireless water meter analyzer tool
@@ -28,7 +28,7 @@ import os
 import struct
 import argparse
 import logging
-import ConfigParser
+import configparser
 from datetime import datetime
 from mysql.connector import MySQLConnection
 from scapy.layers.dot11 import Dot11, Dot11FCS, Dot11EltRates, Dot11EltVendorSpecific
@@ -127,7 +127,7 @@ class ANALYZER(object):
                 # Use pcap capture time when replaying from file
                 self.pcap_time = True
         else:
-            self.filename = sys.stdin
+            self.filename = sys.stdin.buffer
             LOGGER.debug("Using stdin")
 
 
@@ -136,7 +136,7 @@ class ANALYZER(object):
         this is here just for safety as everything would break otherwise """
         if self.macfilter:
             src_mac = packet.getlayer(Dot11).addr2
-            print src_mac
+            print(src_mac)
             return src_mac == self.macfilter
         else:
             return True
@@ -226,7 +226,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=LOGLEVEL, format=LOGGING_FORMAT)
     LOGGER = logging.getLogger()
-    CONFIG = ConfigParser.ConfigParser()
+    CONFIG = configparser.ConfigParser()
 
     get_config()
 
