@@ -4,6 +4,8 @@
 // This allows me to then know how much water each irrigation cycle consumed.
 
 $DB_CREDECNTIALS_FILE = "ENTER PATH FOR db.php";
+# Sanitation check limits the max id, change it to the max ID you wish to support, for me it's only 0-2
+$MAX_ID=2
 
 // DO NOT EDIT BELOW
 require $DB_CREDECNTIALS_FILE;
@@ -19,7 +21,7 @@ function sanitize_num($what, $max){
 	}
 }
 sanitize_num($action,1);
-sanitize_num($line,2);
+sanitize_num($line,$MAX_ID);
 
 // Create an entry
 if (0 == $action){
@@ -27,7 +29,7 @@ if (0 == $action){
 	mysqli_query($db, $sql);
 }elseif(1 == $action){
 	// Get previous entry ID
-	$sql = "select * from irrigation_tracker where start_time = end_time and line = 2 order by start_time desc";
+	$sql = "select * from irrigation_tracker where start_time = end_time and line = $line order by start_time desc";
 	$result = mysqli_query($db, $sql);
 	$myrow=mysqli_fetch_assoc($result);
 	sanitize_num($myrow[id], 999999999999999999999999999);
