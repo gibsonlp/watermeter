@@ -15,8 +15,8 @@ Centilitre / min to report flow (101.11 L/min = 10111 cL/min)
 | ------ | ------ |
 | server_side/water_analyzer.conf | move to /etc/water_analyzer/water_analyzer.conf |
 | server_side/runwater.sh | put your meter's serial number |
-| http/get.php | set db.php path|
-| http/db.php | set mariadb/mysql parameters|
+| http/public_html/api.php | set config.php path|
+| http/config.php | set mariadb/mysql parameters|
 
 ### Optional:
 | File |  Comments |
@@ -31,3 +31,4 @@ Centilitre / min to report flow (101.11 L/min = 10111 cL/min)
 
 I will add installation instructions as time permits, feel free to reach out if you need assistance setting this up.
 If you can run the analyzer on a unit capable of sniffing wifi you can simply run it directly on the wifi interface.
+You can check server_side/schema.sql to get the DB layout...

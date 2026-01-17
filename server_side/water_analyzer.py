@@ -37,7 +37,10 @@ from scapy.sendrecv import sniff
 LOGGING_FORMAT = '[%(asctime)s] %(message)s'
 PROBE_SUBTYPE = 4
 BEACON_SUBTYPE = 8
-PAYLOAD = struct.Struct('<' + '9B 2I 2B I 15B')
+PAYLOAD = struct.Struct('<' + '9B 2I 2B 2h 15B')
+
+HIGHLIGHTER = '\033[1m\033[4m\033[92m'
+ENDC = '\033[0m'
 
 
 def parse_args():
@@ -72,7 +75,9 @@ def get_meter_values(payload):
     serial = values[9]
     dal = values[10]
     clpm = values[13]
-    return (serial, dal, clpm)
+    counter = values[:5]
+    error_codes = values[14]
+    return (serial, dal, clpm, counter, error_codes)
 
 
 class ANALYZER(object):
@@ -86,6 +91,7 @@ class ANALYZER(object):
         self.last_update = datetime.now()
         self.database = None
         self.cursor = None
+        self.previous_value = None
 
 
         if ARGS.mac:
@@ -151,7 +157,7 @@ class ANALYZER(object):
         else:
             return False
 
-    def update_database(self, clpm, dal, packet):
+    def update_database(self, clpm, dal, error_codes, packet):
         """Update DB only if:
         1. Current flow  (cl/min) is > 0, or:
         2. Previous dal measurement is smaller than current one, or:
@@ -162,9 +168,9 @@ class ANALYZER(object):
             if self.pcap_time:
                 pkt_time = "FROM_UNIXTIME({})".format(packet.time)
             else:
-                pkt_time = "NULL"
+                pkt_time = "NOW()"
 
-            sql = "INSERT IGNORE INTO water_raw_data VALUES (NULL, {}, {}, {})".format(pkt_time, dal, clpm)
+            sql = "INSERT IGNORE INTO water_raw_data VALUES (NULL, {}, {}, {}, {})".format(pkt_time, dal, clpm, error_codes)
             LOGGER.debug(sql)
             self.cursor.execute(sql)
             self.previous_dal = dal
@@ -185,20 +191,50 @@ class ANALYZER(object):
             LOGGER.debug("Mac address mismatch")
             return
 
-        serial, dal, clpm = get_meter_values(payload)
+        if len(payload) != 38:
+            #LOGGER.debug("length: %s is too small", len(payload))
+            return
+        serial, dal, clpm, counter, error_codes = get_meter_values(payload)
 
         if serial != self.serial_num:
             LOGGER.debug("Found meter data but wrong Meter ID: %s", serial)
             return
 
-        msg += "{}, {}".format(dal, clpm)
+        src_mac = packet.getlayer(Dot11).addr2
+        print(src_mac)
 
-        if self.update_database(clpm, dal, packet):
+        msg += "{}, {}, {}".format(dal, clpm, error_codes)
+
+        #msg += " - {:02x} {:02x} {:02x} {:02x} {:02x}".format(counter[0], counter[1], counter[2], counter[3], counter[4])
+
+        if self.update_database(clpm, dal, error_codes, packet):
             msg += ", Updated"
         else:
             msg += ", Skipping"
 
         LOGGER.info(msg)
+
+        if(LOGLEVEL == logging.DEBUG):
+            values = PAYLOAD.unpack(payload)
+            dbgstr = ""
+            if self.previous_value is None:
+                self.previous_value = values
+
+            for i, val in enumerate(values):
+                if val != self.previous_value[i]:
+                    if isinstance(values[i], int) and values[i] < 256:
+                        dbgstr += "{}{:02x}{} ".format(HIGHLIGHTER, values[i], ENDC)
+                    else:
+                        dbgstr += "{}{}{} ".format(HIGHLIGHTER, values[i], ENDC)
+                else:
+                    if isinstance(values[i], int) and values[i] < 255:
+                        dbgstr += "{:02x} ".format(values[i])
+                    else:
+                        dbgstr += "{} ".format(values[i])
+
+            self.previous_value = values
+
+            LOGGER.debug(dbgstr)
 
 def get_config():
     """ Make sure we have a configuration in place """
