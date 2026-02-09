@@ -1,0 +1,18 @@
+[Unit]
+Description=Water Meter Packet Sniffer Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/water_analyzer
+# Load config variables (SERIAL_NUM, MAC_ADDR) from here
+EnvironmentFile=/etc/water_analyzer/water_analyzer.conf
+
+# Run the module with arguments from the config file
+ExecStart=/usr/bin/python3 -m services.ingester -sn ${SERIAL_NUM} -m -v
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

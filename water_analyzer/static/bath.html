@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bath Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #000; 
+            color: #e0e0e0; 
+            font-family: 'Segoe UI', sans-serif;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Responsive Layout Engine */
+        .main-layout {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            transition: opacity 0.5s ease; /* Smooth fade in/out */
+        }
+
+        .metric-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            position: relative;
+        }
+
+        .metric-label { font-size: 5vw; text-transform: uppercase; color: #888; letter-spacing: 2px; margin-bottom: 0; }
+        .metric-value { font-weight: 700; line-height: 1; font-size: 25vw; }
+        .metric-unit { font-size: 4vw; color: #666; margin-top: -10px; }
+
+        @media (orientation: landscape) {
+            .main-layout { flex-direction: row; }
+            .metric-box { border-bottom: none; border-right: 1px solid #333; }
+            .metric-value { font-size: 18vw; }
+            .metric-label { font-size: 2vw; }
+            .metric-unit { font-size: 2vw; }
+        }
+
+        .status-bar {
+            position: absolute; bottom: 0; width: 100%; text-align: center;
+            padding: 10px; background: #111; font-size: 1.2rem; color: #666;
+            z-index: 10;
+        }
+
+        /* --- SCREENSAVER CURTAIN --- */
+        /* Sits on top of everything. Black. Blocks clicks? No, let clicks wake it. */
+        #idle-curtain {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000000;
+            z-index: 9999;
+            opacity: 0;          /* Hidden by default */
+            pointer-events: none; /* Let clicks pass through when hidden */
+            transition: opacity 1s ease-in-out;
+        }
+        
+        /* When active, it's pitch black */
+        #idle-curtain.active {
+            opacity: 1;
+            pointer-events: auto; /* Block clicks, or capture them to wake */
+        }
+        
+        /* Floating "Listening" text so you know it's not dead */
+        .saver-text {
+            position: absolute; bottom: 50px; width: 100%; text-align: center;
+            color: #333; font-size: 1rem; opacity: 0; transition: opacity 1s;
+        }
+        #idle-curtain.active .saver-text { opacity: 1; animation: breathe 4s infinite; }
+        
+        @keyframes breathe { 0% { opacity: 0.2; } 50% { opacity: 0.5; } 100% { opacity: 0.2; } }
+
+    </style>
+</head>
+<body>
+
+<div id="idle-curtain">
+    <div class="saver-text">Listening for flow...</div>
+</div>
+
+<div class="main-layout" id="ui-layer">
+    <div class="metric-box">
+        <div class="metric-label">Session Volume</div>
+        <div id="bath-vol" class="metric-value text-success">0.0</div>
+        <div class="metric-unit">LITERS</div>
+    </div>
+
+    <div class="metric-box">
+        <div class="metric-label">Current Flow</div>
+        <div id="bath-flow" class="metric-value" style="color: #66b3ff;">0.0</div>
+        <div class="metric-unit">L / MIN</div>
+    </div>
+</div>
+
+<div class="status-bar">
+    Last Signal: <span id="bath-time" class="text-white fw-bold">Waiting...</span>
+</div>
+
+<script>
+    const UPDATE_INTERVAL = 3000;
+    const IDLE_TIMEOUT_SEC = 60; // Go black after 60 seconds of no flow
+    
+    let lastActiveTime = Date.now();
+    let wakeLock = null;
+
+    // --- 1. ALWAYS REQUEST WAKE LOCK (Keep phone alive) ---
+    async function requestWakeLock() {
+        if ('wakeLock' in navigator) {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                wakeLock.addEventListener('release', () => { wakeLock = null; });
+                console.log('Screen Wake Lock active');
+            } catch (err) { console.error(`${err.name}, ${err.message}`); }
+        }
+    }
+
+    // Re-acquire lock if tab was hidden and shown again
+    document.addEventListener('visibilitychange', async () => {
+        if (wakeLock === null && document.visibilityState === 'visible') {
+            await requestWakeLock();
+        }
+    });
+    
+    // Manual wake on tap (if screen is black)
+    document.getElementById('idle-curtain').addEventListener('click', () => {
+        lastActiveTime = Date.now();
+        updateScreensaver(0); // Force wake momentarily
+    });
+
+    // --- 2. DATA UPDATE & SCREENSAVER LOGIC ---
+    function updateBathData() {
+        fetch('/api/bath_data')
+            .then(response => response.json())
+            .then(data => {
+                const volEl = document.getElementById('bath-vol');
+                const flowEl = document.getElementById('bath-flow');
+                const timeEl = document.getElementById('bath-time');
+
+                volEl.innerText = data.vol.toFixed(1);
+                flowEl.innerText = data.flow.toFixed(1);
+                timeEl.innerText = data.last_seen;
+
+                // Color Logic
+                if (data.flow > 0) {
+                    volEl.style.color = '#4ade80';
+                    flowEl.style.opacity = '1';
+                    
+                    // WATER DETECTED: Reset Idle Timer
+                    lastActiveTime = Date.now();
+                } else {
+                    volEl.style.color = '#2e8b57';
+                    flowEl.style.opacity = '0.5';
+                }
+
+                // Check if we should go black
+                updateScreensaver(data.flow);
+            })
+            .catch(err => {
+                document.getElementById('bath-time').innerText = "Conn Err";
+                document.getElementById('bath-time').style.color = 'red';
+            });
+    }
+
+    function updateScreensaver(currentFlow) {
+        const curtain = document.getElementById('idle-curtain');
+        const secondsSinceActive = (Date.now() - lastActiveTime) / 1000;
+
+        // Condition to stay Awake: Water is flowing OR it stopped less than 60s ago
+        const isAwake = (currentFlow > 0) || (secondsSinceActive < IDLE_TIMEOUT_SEC);
+
+        if (isAwake) {
+            curtain.classList.remove('active'); // Show UI
+        } else {
+            curtain.classList.add('active');    // Go Black (Simulate Off)
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        requestWakeLock();
+        updateBathData();
+        setInterval(updateBathData, UPDATE_INTERVAL);
+    });
+</script>
+
+</body>
+</html>

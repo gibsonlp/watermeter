@@ -12,7 +12,7 @@ CREATE TABLE `irrigation_tracker` (
   KEY `start_time` (`start_time`),
   KEY `end_time` (`end_time`),
   KEY `idx_tracker_perf` (`start_time`,`end_time`,`line`)
-) ENGINE=InnoDB AUTO_INCREMENT=2448 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Table structure for table `water_raw_data`
@@ -28,4 +28,4 @@ CREATE TABLE `water_raw_data` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `capture_time` (`capture_time`),
   KEY `idx_dashboard_perf` (`capture_time`,`clpm`,`dal`,`error_codes`)
-) ENGINE=InnoDB AUTO_INCREMENT=476025 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

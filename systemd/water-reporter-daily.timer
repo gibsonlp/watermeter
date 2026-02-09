@@ -1,0 +1,9 @@
+[Unit]
+Description=Run Water Daily Report at 7 AM
+
+[Timer]
+OnCalendar=*-*-* 07:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

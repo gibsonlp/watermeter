@@ -1,0 +1,8 @@
+[Unit]
+Description=Water Reporter (Daily Summary)
+
+[Service]
+Type=oneshot
+User=pi
+WorkingDirectory=/opt/water_analyzer
+ExecStart=/usr/bin/python3 -m scripts.reporter

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Meter Forensic Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+    /* Add to your <style> block */
+
+    /* Responsive Divider: Only show left-border on Desktop (lg) screens */
+        .desktop-divider {
+            border-left: 1px solid rgba(255, 255, 255, 0.25);
+        }
+    
+        /* Mobile Menu Tweaks: When collapsed, center everything */
+        @media (max-width: 991.98px) {
+            .navbar-collapse {
+                text-align: center;
+                padding-bottom: 15px;
+            }
+            .desktop-divider {
+                border-left: none; /* No ugly line on mobile */
+                margin-top: 15px;
+                padding-top: 15px;
+                border-top: 1px solid rgba(255, 255, 255, 0.1); /* Subtle top separator instead */
+            }
+            .rt-box {
+                text-align: center !important; /* Force center text on mobile */
+                margin-bottom: 10px;
+            }
+            .rt-box.me-4 {
+                margin-right: 20px !important; /* Adjust spacing for mobile center */
+            }
+            /* Stack the Real-Time and Bath button nicely */
+            .mobile-stack {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+            /* 1. & 2. Wider Layout + Perfect Alignment */
+        .layout-wrapper {
+            max-width: 96%; /* Use 96% of the screen */
+            margin: 0 auto; /* Center it */
+            padding: 0 15px;
+        }
+        .chart-container { min-height: 500px; }
+        .table-hover tbody tr:hover { background-color: rgba(255,255,255,0.1); cursor: pointer; }
+
+        /* 3. Better Text Alignment for Real-Time Box */
+        .rt-box {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            line-height: 1.2; /* Tighter line spacing */
+        }
+        .rt-label {
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+        .rt-value {
+            font-family: 'Consolas', 'Monaco', monospace; /* Monospaced font aligns numbers better */
+        }
+
+        /* 4. Hamburger / Mobile Fixes */
+        .navbar-toggler {
+            z-index: 1050; /* Ensure it floats above everything */
+        }
+        /* Prevent overlapping on very small screens */
+        .navbar-brand {
+            margin-right: 0; 
+            font-size: 1.25rem;
+        }
+        /* Anchored & Clean Hamburger */
+        .navbar-toggler {
+            border: none; /* Remove the boxy border */
+            padding: 0;   /* Remove padding to align strictly with the grid */
+            outline: none; /* Remove focus glow */
+            box-shadow: none !important; /* Remove Bootstrap click shadow */
+            z-index: 1051; /* Keep it above the content */
+        }
+    
+        /* Adjust icon size slightly if needed */
+        .navbar-toggler-icon {
+            width: 1.5em;
+            height: 1.5em;
+        }
+    </style>
+</head>
+<body class="bg-body-tertiary">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow-sm">
+    <div class="layout-wrapper w-100 d-flex flex-wrap align-items-center justify-content-between">
+        
+        <a class="navbar-brand fw-bold" href="#">💧 Water Monitor</a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+<div class="collapse navbar-collapse" id="navbarContent">
+            
+            <div class="navbar-nav mx-auto mt-3 mt-lg-0">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-light active" onclick="updateRange('24h', this)">24h</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="updateRange('7d', this)">7d</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="updateRange('30d', this)">30d</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold" onclick="updateRange('1y', this)">1Y</button>
+                </div>
+            </div>
+
+            <div class="desktop-divider ps-lg-3 ms-lg-3 d-flex flex-column flex-lg-row align-items-center justify-content-center justify-content-lg-end">
+                
+                <div class="d-flex align-items-center justify-content-center mb-3 mb-lg-0">
+                    
+                    <div class="rt-box text-lg-end me-4">
+                        <span class="rt-label text-white-50">Current Flow</span>
+                        <div class="text-white">
+                            <span id="rt-flow" class="fw-bold fs-5 rt-value">--</span> 
+                            <small class="opacity-75">L/min</small>
+                        </div>
+                    </div>
+
+                    <div class="rt-box text-lg-end">
+                        <span class="rt-label text-white-50">Last Signal</span>
+                        <div class="text-white">
+                            <span id="rt-time" class="fw-bold rt-value">--:--:--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ms-lg-4 text-center">
+                    <a href="/bath" target="_blank" class="btn btn-sm btn-info text-white fw-bold shadow-sm">🛁 Bath App</a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</nav>
+
+<div class="layout-wrapper">
+
+    <div class="card mb-4 bg-dark border-secondary">
+        <div class="card-body">
+            <div id="container" class="chart-container"></div>
+            <div class="text-muted small text-center mt-2">
+                Tip: Click and drag on the chart to Zoom. Hover over table rows below to highlight events.
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-dark text-light border-secondary">
+        <div class="card-header border-secondary fw-bold">Anomaly & Irrigation Log</div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-dark table-hover mb-0 align-middle">
+                    <thead class="sticky-top bg-dark">
+                        <tr class="text-muted small">
+                            <th>Time</th>
+                            <th>Line</th>
+                            <th>Status</th>
+                            <th>Vol (L)</th>
+                            <th>Flow (LPM)</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="anomaly-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let chart;
+let currentRange = '24h';
+
+// COLORS: High Contrast Pastel Blue (Flow) and Mint Green (Volume)
+const C_FLOW = '#66b3ff';
+const C_VOL  = '#4ade80';
+const C_GRID = '#404040';
+
+document.addEventListener('DOMContentLoaded', function () {
+    initChart();
+    fetchData();
+    setInterval(fetchData, 60000); 
+});
+
+// Force Highcharts to use Local Time (Browser Timezone) instead of UTC
+Highcharts.setOptions({
+    time: {
+        useUTC: false
+    }
+});
+
+function initChart() {
+    chart = Highcharts.chart('container', {
+        chart: { 
+            backgroundColor: 'transparent', 
+            zoomType: 'x', 
+            style: { fontFamily: 'Segoe UI, sans-serif' } 
+        },
+        title: { text: 'Water Usage Forensics', style: { color: '#fff' } },
+        legend: {
+            itemStyle: { color: '#e0e0e0', fontSize: '14px' },
+            itemHoverStyle: { color: '#ffffff' }
+        },
+        xAxis: { 
+            type: 'datetime', 
+            lineColor: C_GRID, 
+            gridLineColor: C_GRID,
+            labels: { style: { color: '#e0e0e0', fontSize: '12px' } },
+            plotBands: [] 
+        },
+        yAxis: [{
+            title: { text: 'Flow (L/min)', style: { color: C_FLOW } },
+            labels: { style: { color: C_FLOW } },
+            gridLineColor: C_GRID
+        }, {
+            title: { text: 'Volume (m³)', style: { color: C_VOL } },
+            labels: { style: { color: C_VOL } },
+            opposite: true, gridLineWidth: 0
+        }],
+        tooltip: { shared: true, xDateFormat: '%Y-%m-%d %H:%M:%S', backgroundColor: 'rgba(0,0,0,0.85)', style: { color: '#fff' } },
+        series: [
+            { 
+                name: 'Flow Rate', 
+                type: 'column', // Vertical Lines
+                borderWidth: 0, 
+                pointPadding: 0, 
+                groupPadding: 0,
+                color: C_FLOW, 
+                data: [] 
+            },
+            { 
+                name: 'Volume', 
+                type: 'line', 
+                yAxis: 1, 
+                color: C_VOL, 
+                data: [] 
+            },
+            { 
+                name: 'Critical Events', 
+                type: 'scatter', 
+                color: '#ff4d4d', 
+                marker: { symbol: 'circle', radius: 6 },
+                tooltip: { pointFormat: '<b>{point.title}</b><br>Flow: {point.y} LPM' },
+                data: [] 
+            }
+        ]
+    });
+}
+
+function updateRange(range, btn) {
+    currentRange = range;
+    document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    chart.zoomOut();
+    fetchData();
+}
+
+function highlightGraph(bandId, isHovering) {
+    if(!bandId) return;
+    const axis = chart.xAxis[0];
+    const bands = axis.plotLinesAndBands;
+    const band = bands.find(b => b.id === bandId);
+    if (!band) return;
+
+    if (isHovering) {
+        band.svgElem.attr({ 'stroke': '#ffffff', 'stroke-width': 2, 'opacity': 0.8 });
+    } else {
+        band.svgElem.attr({ 'stroke': 'none', 'opacity': band.options.originalOpacity || 1 });
+    }
+}
+
+function fetchData() {
+    
+    // Updated Fetch URLs for Python API
+    Promise.all([
+        fetch(`api/data?metric=flow&range=${currentRange}`).then(r => r.json()),
+        fetch(`api/data?metric=volume&range=${currentRange}`).then(r => r.json()),
+        fetch(`api/data?metric=anomalies&range=${currentRange}`).then(r => r.json())
+    ]).then(([flowData, volData, anomalyData]) => {
+        
+        if (flowData.error) { console.error(flowData.error); return; }
+
+        chart.series[0].setData(flowData);
+        chart.series[1].setData(volData);
+        chart.series[2].setData(anomalyData.points || []); 
+
+        const bands = anomalyData.plotBands.map(b => ({ ...b, zIndex: 1, originalOpacity: 1 }));
+        chart.xAxis[0].update({ plotBands: bands });
+
+        // Merge bands and points for the table
+        let tableData = [...anomalyData.plotBands];
+        if (anomalyData.points) {
+            anomalyData.points.forEach(pt => {
+                tableData.push({
+                    from: pt.x,
+                    id: null, 
+                    details: { line: -1, name: 'System/Meter', status: 'CRITICAL', vol: 0, flow: pt.y, msg: pt.title }
+                });
+            });
+        }
+        renderTable(tableData);
+
+    }).catch(err => console.error(err));
+}
+
+function renderTable(events) {
+    const tbody = document.getElementById('anomaly-table-body');
+    tbody.innerHTML = '';
+
+    events.sort((a, b) => b.from - a.from).forEach(evt => {
+        const d = evt.details;
+        const dateStr = new Date(evt.from).toLocaleString();
+        
+        let badgeClass = 'bg-success';
+        if (d.status === 'LEAK' || d.status === 'BURST') badgeClass = 'bg-warning text-dark';
+        if (d.status === 'CRITICAL' || d.status === 'DATA LOSS') badgeClass = 'bg-danger';
+        if (d.status === 'CLOG') badgeClass = 'bg-secondary';
+
+        const tr = document.createElement('tr');
+        if(evt.id) {
+            tr.onmouseenter = () => highlightGraph(evt.id, true);
+            tr.onmouseleave = () => highlightGraph(evt.id, false);
+        }
+        
+        tr.innerHTML = `
+            <td>${dateStr}</td>
+            <td>${d.name || 'Unknown'}</td>
+            <td><span class="badge ${badgeClass} status-badge" style="width:80px">${d.status}</span></td>
+            <td>${d.vol.toFixed(1)}</td>
+            <td>${d.flow.toFixed(1)}</td>
+            <td class="text-light opacity-75 small">${d.msg}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    initChart();
+    fetchData(); // Load Graph
+    
+    // Start Real-Time Reader (Poll every 5 seconds)
+    updateRealtime();
+    setInterval(updateRealtime, 5000); 
+    
+    // Graph Updates (Every 60 seconds)
+    setInterval(fetchData, 60000); 
+});
+
+/**
+ * Fetches real-time flow and timestamp for the top navbar.
+ * Dims values if data is stale (> 60s).
+ */
+function updateRealtime() {
+    fetch('api/realtime')
+        .then(r => r.json())
+        .then(data => {
+            const flowEl = document.getElementById('rt-flow');
+            const timeEl = document.getElementById('rt-time');
+            
+            flowEl.innerText = data.flow.toFixed(1);
+            timeEl.innerText = data.time_str;
+            
+            // Visual Feedback for Stale Data
+            if (data.seconds_ago > 60) {
+                flowEl.style.opacity = '0.5';
+                timeEl.style.color = '#ff6b6b'; // Light Red
+                timeEl.innerText += ' (Stale)';
+            } else {
+                flowEl.style.opacity = '1';
+                timeEl.style.color = '#fff';
+            }
+        })
+        .catch(err => console.error("Realtime API Error:", err));
+}
+
+</script>
+
+</body>
+</html>

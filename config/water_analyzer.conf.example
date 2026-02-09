@@ -1,4 +1,4 @@
-# should go under /etc/water_analyzer.con
+# should go under /etc/water_analyzer/
 [Database]
 username = username     // EDIT ME
 password = p@ssw0rd     // EDIT ME
@@ -41,3 +41,14 @@ limit_dal = 2
 # 20 clpm = 0.2 Liters/min (Very low threshold)
 limit_flow = 20
 isolation_check = true
+
+[Ulanzi]
+enabled = true
+ip = 1.2.3.4                                    // EDIT ME
+update_interval = 4
+# Blue color for water
+color = 0,150,255
+# Icons from Awtrix/Ulanzi library
+icon_static = 8990
+icon_anim = 55027
+api_url = http://127.0.0.1:8081/api/bath_data   // EDIT ME
