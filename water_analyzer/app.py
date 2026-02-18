@@ -43,7 +43,7 @@ def log_irrigation():
         cursor = conn.cursor()
         
         if action == 0: # Start
-            cursor.execute("INSERT INTO irrigation_tracker (start_time, end_time, line) VALUES (NOW(), NOW(), %s)", (line,))
+            cursor.execute("INSERT INTO irrigation_tracker (start_time, end_time, line) VALUES (NOW(), NULL, %s)", (line,))
         elif action == 1: # Stop
             # Update the most recent 'open' run for this line
             cursor.execute("""
