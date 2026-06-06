@@ -106,9 +106,18 @@ def get_yesterday_total(cursor, limit, irrigation_liters=0.0):
     
     return total_liters
 
-def send_email(subject, body):
+def send_email(subject, body, verbose=False):
     """Sends email using credentials from config."""
     cfg = get_email_config()
+    if verbose:
+        print("=" * 60)
+        print(f"Subject: {subject}")
+        print(f"From:    {cfg.get('from', '')}")
+        print(f"To:      {cfg.get('to', '')}")
+        print("=" * 60)
+        print(body)
+        print("=" * 60)
+
     if not cfg['enabled']:
         LOGGER.info("Email disabled in config.")
         return
@@ -248,6 +257,6 @@ if __name__ == "__main__":
         body += "IRRIGATION LOG (Yesterday):\n" + "-"*30 + "\n" + log_output
 
     if should_send:
-        send_email(subject, body)
+        send_email(subject, body, verbose=args.verbose)
     else:
         LOGGER.info("No anomalies found. Silent mode.")
