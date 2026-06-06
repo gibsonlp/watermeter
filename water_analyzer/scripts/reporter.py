@@ -68,20 +68,24 @@ def check_realtime_hw_error(cursor):
 
         ALERTS.append(f"WARNING: Continuous Flow (>1h). Range: {time_str} | Vol: {vol_liters:.0f}L | Min Rate: {flow_lpm:.1f} LPM")
 
-def check_rolling_24h(cursor, limit):
+def check_rolling_24h(cursor, limit, irrigation_liters=0.0):
     """
     Safety Check 2: Rolling 24h Total.
     Checks strictly the last 24 hours from NOW (crossing midnight).
-    Useful for catching leaks that started yesterday evening.
+    Deducts legitimate irrigation volumes to measure household usage separately.
     """
     cursor.execute("SELECT MAX(dal) - MIN(dal) FROM water_raw_data WHERE capture_time >= NOW() - INTERVAL 24 HOUR")
     res = cursor.fetchone()
     if res and res[0]:
-        liters = float(res[0]) * 10
-        if liters > limit:
-            ALERTS.append(f"CRITICAL: Rolling 24h usage {liters:.0f}L exceeds limit ({limit}L)")
+        total_liters = float(res[0]) * 10
+        household_liters = max(0.0, total_liters - irrigation_liters)
+        if household_liters > limit:
+            ALERTS.append(
+                f"CRITICAL: Rolling 24h household usage {household_liters:.0f}L exceeds limit ({limit}L) "
+                f"[Total: {total_liters:.0f}L | Irrigation: {irrigation_liters:.0f}L]"
+            )
 
-def get_yesterday_total(cursor, limit):
+def get_yesterday_total(cursor, limit, irrigation_liters=0.0):
     """
     Status Check: Yesterday's Total (00:00 - 23:59).
     Used for the Daily Report summary.
@@ -91,12 +95,16 @@ def get_yesterday_total(cursor, limit):
         WHERE capture_time >= CURDATE() - INTERVAL 1 DAY AND capture_time < CURDATE()
     """)
     res = cursor.fetchone()
-    liters = (float(res[0]) * 10) if res and res[0] else 0.0
+    total_liters = (float(res[0]) * 10) if res and res[0] else 0.0
+    household_liters = max(0.0, total_liters - irrigation_liters)
     
-    if liters > limit:
-        ALERTS.append(f"LEAK: Yesterday's usage {liters:.0f}L exceeds limit ({limit}L)")
+    if household_liters > limit:
+        ALERTS.append(
+            f"LEAK: Yesterday's household usage {household_liters:.0f}L exceeds limit ({limit}L) "
+            f"[Total: {total_liters:.0f}L | Irrigation: {irrigation_liters:.0f}L]"
+        )
     
-    return liters
+    return total_liters
 
 def send_email(subject, body):
     """Sends email using credentials from config."""
@@ -133,12 +141,7 @@ if __name__ == "__main__":
     cursor = conn.cursor()
     conf_analysis = get_analysis_config()
 
-    # 1. Run Global Safety Checks
-    check_realtime_hw_error(cursor)
-    check_rolling_24h(cursor, conf_analysis['daily_limit'])
-    yest_liters = get_yesterday_total(cursor, conf_analysis['daily_limit'])
-
-    # 2. Detailed Irrigation Analysis
+    # 1. Detailed Irrigation Analysis
     # If running Hourly (--errors-only), scan last 24h window for context.
     # If running Daily, scan exactly Yesterday (00:00-23:59).
     end_dt = datetime.now()
@@ -149,10 +152,27 @@ if __name__ == "__main__":
         end_dt = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         start_dt = end_dt - timedelta(days=1)
 
-    # Use Shared Logic Engine
+    # Use Shared Logic Engine to identify irrigation runs and potential anomalies
     res = analyze_period(start_dt, end_dt)
     bands = res['plotBands']
     points = res['points']
+
+    # Calculate total legitimate irrigation volumes to subtract from global limits
+    if args.errors_only:
+        # In hourly/errors-only mode, the analyzed period is already exactly the last 24 hours
+        irrigation_24h_liters = sum(b['details']['vol'] for b in bands if 'line' in b['details'])
+        irrigation_yesterday_liters = 0.0
+    else:
+        # In daily mode, res is exactly yesterday's data
+        irrigation_yesterday_liters = sum(b['details']['vol'] for b in bands if 'line' in b['details'])
+        # Run a separate 24h scan specifically for the rolling 24h safety check
+        analysis_24h = analyze_period(datetime.now() - timedelta(hours=24), datetime.now())
+        irrigation_24h_liters = sum(b['details']['vol'] for b in analysis_24h['plotBands'] if 'line' in b['details'])
+
+    # 2. Run Global Safety Checks
+    check_realtime_hw_error(cursor)
+    check_rolling_24h(cursor, conf_analysis['household_limit'], irrigation_24h_liters)
+    yest_liters = get_yesterday_total(cursor, conf_analysis['daily_limit'], irrigation_yesterday_liters)
     log_output = ""
 
     # Check for Hardware Errors (256) in the analyzed period

@@ -81,9 +81,11 @@ def get_line_rules():
 
 def get_analysis_config():
     """Returns global analysis settings."""
+    daily_limit = config.getfloat('Analysis', 'daily_leak_limit_liters', fallback=1500)
     return {
         'enable_monitoring': config.getboolean('Analysis', 'enable_line_monitoring', fallback=True),
-        'daily_limit': config.getfloat('Analysis', 'daily_leak_limit_liters', fallback=1500)
+        'daily_limit': daily_limit,
+        'household_limit': config.getfloat('Analysis', 'daily_household_limit_liters', fallback=daily_limit)
     }
 
 def get_ulanzi_config():

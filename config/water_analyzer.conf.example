@@ -21,6 +21,8 @@ to_addr = example@example.com                   // EDIT ME
 # Set to false if you only want global leak/error checks (no irrigation analysis)
 enable_line_monitoring = false
 daily_leak_limit_liters = 1500
+# Optional: Separate household consumption limit (deducts active irrigation from daily checks)
+daily_household_limit_liters = 1000
 
 [Line_0]
 name = Front Garden
