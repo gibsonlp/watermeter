@@ -181,7 +181,11 @@ if __name__ == "__main__":
     # 2. Run Global Safety Checks
     check_realtime_hw_error(cursor)
     check_rolling_24h(cursor, conf_analysis['household_limit'], irrigation_24h_liters)
-    yest_liters = get_yesterday_total(cursor, conf_analysis['daily_limit'], irrigation_yesterday_liters)
+
+    if not args.errors_only:
+        yest_liters = get_yesterday_total(cursor, conf_analysis['daily_limit'], irrigation_yesterday_liters)
+    else:
+        yest_liters = 0.0
     log_output = ""
 
     # Check for Hardware Errors (256) in the analyzed period
