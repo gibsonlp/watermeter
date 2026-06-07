@@ -6,6 +6,7 @@ Contains the 'analyze_period' function which correlates Irrigation Runs
 with Raw Water Data to detect leaks, bursts, and clogs.
 """
 
+import time
 from config import get_line_rules
 from core.database import get_connection
 from datetime import datetime
@@ -245,7 +246,8 @@ def analyze_period(start_dt, end_dt):
         if not has_data:
             # We skip data loss warning for Lines with Isolation checks (e.g. Pots) 
             # as they often have 0 flow which might not register if filtered upstream.
-            if not rule['isolation']:
+            # Also skip for ongoing/active runs (where end_time is NULL/None)
+            if not rule['isolation'] and run['end_time'] is not None:
                 status = 'DATA LOSS'
                 msg = "No meter readings found during run"
                 color = 'rgba(128, 128, 128, 0.5)' # Grey
