@@ -221,6 +221,9 @@ def analyze_period(start_dt, end_dt):
             # C. Inside Run Analysis
             elif r_start <= ts <= r_end:
                 has_data = True
+                samples_total += 1
+                if row['clpm'] > limit_clpm:
+                    samples_over_limit += 1
                 if min_dal is None or row['dal'] < min_dal: min_dal = row['dal']
                 if max_dal is None or row['dal'] > max_dal: max_dal = row['dal']
                 if row['clpm'] > max_flow_cl: max_flow_cl = row['clpm']
