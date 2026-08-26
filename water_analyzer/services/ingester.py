@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import Optional
 
 from mysql.connector import MySQLConnection
-from scapy.all import sniff, Dot11, Dot11Elt
+from scapy.all import sniff, Dot11, Dot11Elt, PcapReader
 from config import get_db_config
 
 # Constants
@@ -221,10 +221,14 @@ def main():
     try:
         if args.file:
             LOGGER.warning(f"Reading from file: {args.file}")
-            sniff(offline=args.file, prn=callback, store=0)
+            with PcapReader(args.file) as reader:
+                for pkt in reader:
+                    callback(pkt)
         elif not sys.stdin.isatty():
             LOGGER.warning("Reading from STDIN (Pipe)...")
-            sniff(offline=sys.stdin.buffer, prn=callback, store=0)
+            with PcapReader(sys.stdin.buffer) as reader:
+                for pkt in reader:
+                    callback(pkt)
         else:
             LOGGER.warning("Reading from Live Interface...")
             sniff(prn=callback, store=0)

@@ -9,7 +9,7 @@ import struct
 from datetime import datetime
 import pytz
 from scapy.layers.dot11 import Dot11, Dot11FCS, Dot11EltRates, Dot11EltVendorSpecific
-from scapy.sendrecv import sniff
+from scapy.utils import PcapReader
 
 # Put your own mac address here
 MYMAC = "WATER_CLOCK_MACADDRESS"
@@ -83,4 +83,6 @@ class ANALYZER(object):
         print ""
 
 ANALYZER_INSTANCE = ANALYZER()
-sniff(offline=sys.stdin, prn=ANALYZER_INSTANCE.analyze_line, store=0)
+with PcapReader(getattr(sys.stdin, 'buffer', sys.stdin)) as reader:
+    for pkt in reader:
+        ANALYZER_INSTANCE.analyze_line(pkt)
