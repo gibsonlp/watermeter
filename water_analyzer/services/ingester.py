@@ -11,6 +11,7 @@ Verbosity Levels:
 """
 
 import sys
+import signal
 import struct
 import argparse
 import logging
@@ -226,8 +227,10 @@ def main():
                     callback(pkt)
         elif not sys.stdin.isatty():
             LOGGER.warning("Reading from STDIN (Pipe)...")
+            signal.alarm(600)
             with PcapReader(sys.stdin.buffer) as reader:
                 for pkt in reader:
+                    signal.alarm(600)
                     callback(pkt)
         else:
             LOGGER.warning("Reading from Live Interface...")
