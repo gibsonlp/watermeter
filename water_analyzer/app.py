@@ -9,6 +9,7 @@ Flask Web Server.
 
 import sys
 import os
+import logging
 # --- PATH FIX: Ensure we can import from 'core' regardless of how this is run ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
@@ -20,6 +21,18 @@ from datetime import datetime, timedelta
 from core.database import get_connection
 from core.logic import analyze_period
 
+
+class QuietPollingFilter(logging.Filter):
+    """Suppress noisy 200 OK polling logs for /api/bath_data and /api/realtime."""
+    def filter(self, record):
+        msg = record.getMessage()
+        if '" 200 ' in msg and ('GET /api/bath_data ' in msg or 'GET /api/realtime ' in msg):
+            return False
+        return True
+
+
+logging.getLogger('werkzeug').addFilter(QuietPollingFilter())
+
 app = Flask(__name__, static_folder='static')
 
 @app.route('/')
@@ -27,6 +40,7 @@ def index():
     """Serves the main dashboard."""
     return send_from_directory('static', 'index.html')
 
+@app.route('/waterrun.php', methods=['GET'])
 @app.route('/api/irrigation', methods=['GET'])
 def log_irrigation():
     """

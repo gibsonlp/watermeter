@@ -1,3 +1,5 @@
 flask
 mysql-connector-python
+requests
 scapy
+websocket-client

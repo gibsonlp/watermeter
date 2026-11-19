@@ -232,6 +232,10 @@ if __name__ == "__main__":
             if args.errors_only and b['to'] < recency_cutoff_ms:
                 continue
 
+            # In hourly checks, do not alert on DATA LOSS
+            if args.errors_only and status == 'DATA LOSS':
+                continue
+
             ALERTS.append(f"{status}: {d['name']} ({d['msg']})")
 
     conn.close()

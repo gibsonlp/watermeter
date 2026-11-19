@@ -1,0 +1,18 @@
+[Unit]
+Description=Shelly Pro 3 Irrigation WebSocket Monitor
+After=network-online.target mariadb.service
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/water_analyzer
+ExecStart=/opt/water_analyzer/venv/bin/python -u -m services.shelly_monitor
+StandardOutput=append:/var/log/water_analyzer/shelly.log
+StandardError=append:/var/log/water_analyzer/shelly.log
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

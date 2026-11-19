@@ -124,3 +124,11 @@ def get_ulanzi_config():
         'icon_static': section.get('icon_static', fallback="8990"),
         'icon_anim': section.get('icon_anim', fallback="55027")
     }
+
+
+def get_shelly_config():
+    """Returns Shelly Pro WebSocket monitor settings."""
+    return {
+        'enabled': config.getboolean('Shelly', 'enabled', fallback=False),
+        'ip': config.get('Shelly', 'ip', fallback=''),
+    }

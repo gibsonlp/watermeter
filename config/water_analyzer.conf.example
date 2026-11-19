@@ -54,3 +54,7 @@ color = 0,150,255
 icon_static = 8990
 icon_anim = 55027
 api_url = http://127.0.0.1:8081/api/bath_data   // EDIT ME
+
+[Shelly]
+enabled = true
+ip = 1.2.3.4                                    // EDIT ME
