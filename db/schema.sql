@@ -29,3 +29,14 @@ CREATE TABLE `water_raw_data` (
   UNIQUE KEY `capture_time` (`capture_time`),
   KEY `idx_dashboard_perf` (`capture_time`,`clpm`,`dal`,`error_codes`)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Table structure for table `meter_status`
+--
+
+CREATE TABLE `meter_status` (
+  `id` tinyint(1) unsigned NOT NULL,
+  `last_seen` datetime NOT NULL,
+  `clpm` smallint(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

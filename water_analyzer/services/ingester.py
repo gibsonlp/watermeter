@@ -105,13 +105,16 @@ def update_database(state: State, clpm, dal, error_codes, packet, pcap_time=Fals
         just_stopped
     )
 
-    if should_write:
-        try:
-            # Reconnect if needed
-            if not state.conn.is_connected():
-                state.conn.reconnect()
-                state.cursor = state.conn.cursor()
+    if not should_write and pcap_time:
+        return False
 
+    try:
+        # Reconnect if needed
+        if not state.conn.is_connected():
+            state.conn.reconnect()
+            state.cursor = state.conn.cursor()
+
+        if should_write:
             if pcap_time:
                 pkt_time = datetime.fromtimestamp(float(packet.time)).strftime('%Y-%m-%d %H:%M:%S')
                 sql = "INSERT IGNORE INTO water_raw_data VALUES (NULL, %s, %s, %s, %s)"
@@ -119,17 +122,25 @@ def update_database(state: State, clpm, dal, error_codes, packet, pcap_time=Fals
             else:
                 sql = "INSERT IGNORE INTO water_raw_data VALUES (NULL, NOW(), %s, %s, %s)"
                 vals = (dal, clpm, error_codes)
-
             state.cursor.execute(sql, vals)
-            state.conn.commit()
-            
+
+        if not pcap_time:
+            state.cursor.execute(
+                "INSERT INTO meter_status (id, last_seen, clpm) VALUES (1, NOW(), %s) "
+                "ON DUPLICATE KEY UPDATE last_seen = NOW(), clpm = VALUES(clpm)",
+                (clpm,),
+            )
+
+        state.conn.commit()
+
+        if should_write:
             state.previous_dal = dal
             state.last_update = now
             state.was_flowing = (clpm > 0)
             return True
-        except Exception as e:
-            LOGGER.error(f"DB Write Error: {e}")
-            
+    except Exception as e:
+        LOGGER.error(f"DB Write Error: {e}")
+
     return False
 
 def process_packet(packet, state: State, verbose_level: int, use_pcap_time: bool, mac_filter: str):

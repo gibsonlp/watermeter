@@ -136,18 +136,20 @@ def get_realtime():
     """
     Real-Time Status API.
     Returns the absolute latest flow rate and signal time.
-    Logic: If the last signal is older than 60 seconds, assume Flow is 0.
+    Logic: If the last signal is older than 91 seconds, assume Flow is 0.
     """
     conn = get_connection()
     cursor = conn.cursor()
-    
-    # Fetch only the very last packet
-    cursor.execute("""
-        SELECT capture_time, clpm 
-        FROM water_raw_data 
-        ORDER BY capture_time DESC LIMIT 1
-    """)
+
+    cursor.execute("SELECT last_seen, clpm FROM meter_status WHERE id = 1")
     row = cursor.fetchone()
+    if not row:
+        cursor.execute("""
+            SELECT capture_time, clpm 
+            FROM water_raw_data 
+            ORDER BY capture_time DESC LIMIT 1
+        """)
+        row = cursor.fetchone()
     conn.close()
 
     if not row:
@@ -155,13 +157,13 @@ def get_realtime():
 
     last_dt = row[0]
     raw_clpm = row[1]
-    
+
     # Calculate staleness
     seconds_ago = (datetime.now() - last_dt).total_seconds()
-    
-    # Logic: If data is stale (>60s), force flow to 0 (pump stopped / no signal)
+
+    # Logic: If data is stale (>91s), force flow to 0 (pump stopped / no signal)
     # Otherwise, convert Centiliters/min to Liters/min
-    current_flow = (raw_clpm / 100.0) if seconds_ago < 60 else 0.0
+    current_flow = (raw_clpm / 100.0) if seconds_ago <= 91 else 0.0
 
     return jsonify({
         'flow': current_flow,

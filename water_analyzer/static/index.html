@@ -359,7 +359,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 /**
  * Fetches real-time flow and timestamp for the top navbar.
- * Dims values if data is stale (> 60s).
+ * Dims values if data is stale (> 91s).
  */
 function updateRealtime() {
     fetch('api/realtime')
@@ -372,7 +372,7 @@ function updateRealtime() {
             timeEl.innerText = data.time_str;
             
             // Visual Feedback for Stale Data
-            if (data.seconds_ago > 60) {
+            if (data.seconds_ago > 91) {
                 flowEl.style.opacity = '0.5';
                 timeEl.style.color = '#ff6b6b'; // Light Red
                 timeEl.innerText += ' (Stale)';
